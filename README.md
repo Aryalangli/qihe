@@ -1,36 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 契合 AI 租房合同助手
 
-## Getting Started
+基于 Next.js App Router、TypeScript、Tailwind CSS 的移动端前端骨架。
 
-First, run the development server:
+## 运行
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+打开 http://localhost:3000 查看页面。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 路由
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `/` 首页，含历史对话侧页
+- `/generate` 合同生成聊天流
+- `/review` 合同审查上传与风险结果流
 
-## Learn More
+## 主要目录
 
-To learn more about Next.js, take a look at the following resources:
+- `src/app/page.tsx` 首页与历史对话侧页
+- `src/app/generate/page.tsx` 合同生成页
+- `src/app/review/page.tsx` 合同审查页
+- `src/components/` 可复用 UI 组件
+- `src/data/mock.ts` mock 假数据
+- `src/lib/ai-placeholders.ts` 大模型占位函数，含 `TODO: 接入大模型 API`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 当前 mock 替换点
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- 历史对话列表：`src/data/mock.ts`
+- 合同生成结果：`src/data/mock.ts` 与 `src/lib/ai-placeholders.ts`
+- 最近审查记录：`src/data/mock.ts`
+- 系统文件列表、相册色块：`src/app/review/page.tsx` 与 `src/data/mock.ts`
+- 风险审查结果数组：`src/data/mock.ts` 与 `src/lib/ai-placeholders.ts`

@@ -1,65 +1,193 @@
-import Image from "next/image";
+"use client";
+
+import Link from "next/link";
+import {
+  BotMessageSquare,
+  FileCheck2,
+  FilePenLine,
+  Menu,
+  ScanLine,
+  Search,
+  X,
+} from "lucide-react";
+import { useState } from "react";
+import { QiheLogo } from "@/components/brand";
+import { PromptBox } from "@/components/chat";
+import { HomeIndicator, PhoneFrame, StatusBar } from "@/components/mobile-shell";
+import { historyItems } from "@/data/mock";
+import { cn } from "@/lib/utils";
 
 export default function Home() {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [prompt, setPrompt] = useState("");
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <PhoneFrame>
+      <StatusBar />
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <header className="flex h-16 items-center justify-between px-8">
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(true)}
+            aria-label="打开历史对话"
+            className="grid h-11 w-11 place-items-center rounded-full text-slate-950"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+            <Menu size={34} strokeWidth={2.2} />
+          </button>
+          <button
+            type="button"
+            aria-label="功能入口"
+            className="grid h-11 w-11 place-items-center rounded-full text-[#F59E0B]"
+          >
+            <ScanLine size={26} />
+          </button>
+        </header>
+
+        <section className="flex flex-1 flex-col px-8">
+          <div className="mt-24 flex flex-col items-center">
+            <QiheLogo />
+            <p className="mt-7 text-base font-medium text-slate-500">
+              AI 租房合同助手
+            </p>
+          </div>
+
+          <PromptBox
+            value={prompt}
+            onChange={setPrompt}
+            onSend={() => setPrompt("")}
+            multiline
+            placeholder={'输入你的租房合同需求，例如："帮我生成一份租房合同"'}
+            className="mt-14 border-slate-950 shadow-none"
+          />
+
+          <div className="mt-16 grid grid-cols-2 gap-12 px-8">
+            <FeatureCard
+              href="/generate"
+              title="合同生成"
+              tint="blue"
+              icon={<FilePenLine size={28} />}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            <FeatureCard
+              href="/review"
+              title="合同审查"
+              tint="green"
+              icon={<FileCheck2 size={28} />}
+            />
+          </div>
+
+          <p className="mt-12 text-center text-sm text-slate-300">
+            底部导航已删除，保持空白
+          </p>
+        </section>
+
+        <HomeIndicator />
+        <HistoryDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      </div>
+    </PhoneFrame>
+  );
+}
+
+function FeatureCard({
+  href,
+  title,
+  icon,
+  tint,
+}: {
+  href: string;
+  title: string;
+  icon: React.ReactNode;
+  tint: "blue" | "green";
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex aspect-square flex-col items-center justify-center rounded-[22px] border border-slate-200 bg-white text-slate-900 shadow-sm"
+    >
+      <span
+        className={cn(
+          "grid h-16 w-16 place-items-center rounded-full",
+          tint === "blue"
+            ? "bg-blue-50 text-[#2563EB] ring-1 ring-blue-200"
+            : "bg-emerald-50 text-[#34D399] ring-1 ring-emerald-200",
+        )}
+      >
+        {icon}
+      </span>
+      <span className="mt-3 text-base font-semibold">{title}</span>
+    </Link>
+  );
+}
+
+function HistoryDrawer({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  return (
+    <aside
+      className={cn(
+        "absolute inset-0 z-20 bg-white transition-transform duration-300",
+        open ? "translate-x-0" : "-translate-x-full",
+      )}
+      aria-hidden={!open}
+    >
+      <StatusBar />
+      <div className="flex items-start justify-between px-8 pt-6">
+        <div className="flex items-center gap-4">
+          <div className="grid h-14 w-14 place-items-center rounded-full bg-blue-50 text-2xl font-semibold text-[#2563EB] ring-1 ring-blue-200">
+            契
+          </div>
+          <div>
+            <div className="flex items-center gap-1 text-2xl font-medium text-slate-950">
+              qihe_user
+              <span className="text-lg text-slate-500">›</span>
+            </div>
+            <p className="mt-1 text-sm text-slate-500">租房合同生成与审查</p>
+          </div>
         </div>
-      </main>
-    </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="关闭历史对话"
+          className="grid h-10 w-10 place-items-center rounded-full text-[#F59E0B]"
+        >
+          <X size={22} />
+        </button>
+      </div>
+
+      <div className="px-8 pt-20">
+        <div className="mb-10 flex items-center justify-between">
+          <h2 className="text-3xl font-bold text-slate-950">历史对话</h2>
+          <Search size={46} strokeWidth={1.7} className="text-slate-950" />
+        </div>
+
+        <div className="space-y-5">
+          {historyItems.map((item) => (
+            <button
+              key={item.title}
+              type="button"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-left shadow-sm"
+            >
+              <p className="text-lg font-medium text-slate-800">{item.title}</p>
+              <p className="mt-2 text-sm text-slate-500">{item.subtitle}</p>
+            </button>
+          ))}
+        </div>
+
+        <p className="mt-36 text-center text-sm text-slate-300">
+          下半部分保持空白
+        </p>
+      </div>
+
+      <div className="absolute bottom-0 left-0 right-0">
+        <HomeIndicator />
+      </div>
+      <BotMessageSquare
+        size={26}
+        className="absolute right-8 top-36 text-slate-950"
+      />
+    </aside>
   );
 }
