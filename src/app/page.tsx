@@ -5,7 +5,6 @@ import {
   FileCheck2,
   FilePenLine,
   Menu,
-  ScanLine,
   Search,
   X,
 } from "lucide-react";
@@ -23,7 +22,7 @@ export default function Home() {
   return (
     <PhoneFrame>
       <div className="relative flex min-h-0 flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between px-8">
+        <header className="flex h-16 items-center px-8">
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
@@ -31,13 +30,6 @@ export default function Home() {
             className="grid h-11 w-11 place-items-center rounded-full text-slate-950"
           >
             <Menu size={34} strokeWidth={2.2} />
-          </button>
-          <button
-            type="button"
-            aria-label="功能入口"
-            className="grid h-11 w-11 place-items-center rounded-full text-[#F59E0B]"
-          >
-            <ScanLine size={26} />
           </button>
         </header>
 
