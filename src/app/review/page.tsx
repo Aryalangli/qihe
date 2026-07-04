@@ -102,7 +102,6 @@ export default function ReviewPage() {
         <ReviewEntry
           showSheet={step === "sheet"}
           onUpload={() => setStep("sheet")}
-          onDirectUpload={startUpload}
           onCloseSheet={() => setStep("entry")}
           onAlbum={() => setStep("album")}
           onFile={() => setStep("files")}
@@ -116,7 +115,6 @@ export default function ReviewPage() {
 function ReviewEntry({
   showSheet,
   onUpload,
-  onDirectUpload,
   onCloseSheet,
   onAlbum,
   onFile,
@@ -124,7 +122,6 @@ function ReviewEntry({
 }: {
   showSheet: boolean;
   onUpload: () => void;
-  onDirectUpload: () => void;
   onCloseSheet: () => void;
   onAlbum: () => void;
   onFile: () => void;
@@ -141,7 +138,7 @@ function ReviewEntry({
           AI 合同审查
         </h1>
         <div className="mt-8">
-          <UploadCard onClick={hasRecords ? onUpload : onDirectUpload} />
+          <UploadCard onClick={onUpload} />
         </div>
         {hasRecords ? (
           <div className="mt-24">
@@ -465,9 +462,6 @@ function FilePicker({
         <h1 className="flex-1 text-center text-lg font-semibold text-slate-950">
           系统文件
         </h1>
-        <button type="button" className="w-9 text-sm text-[#2563EB]">
-          选择
-        </button>
       </header>
       <section className="flex flex-1 flex-col px-6 pt-2">
         <div className="flex h-11 items-center gap-2 rounded-xl bg-slate-50 px-4 text-slate-400">
@@ -475,7 +469,7 @@ function FilePicker({
           <span className="text-sm">搜索文件名</span>
         </div>
 
-        <h2 className="mt-8 text-base font-semibold text-slate-800">最近文件</h2>
+        <h2 className="mt-8 text-base font-semibold text-slate-800">文件类型</h2>
         <div className="mt-4 space-y-3">
           {fileOptions.map((file) => (
             <button
