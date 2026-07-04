@@ -595,7 +595,7 @@ function UploadPreview({
           onClick={onDone}
           className="mx-auto mt-auto h-12 w-48 rounded-xl bg-[#2563EB] font-semibold text-white shadow-sm"
         >
-          上传完成
+          再次上传
         </button>
         <HomeIndicator />
       </section>
