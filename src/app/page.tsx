@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import {
-  BotMessageSquare,
   FileCheck2,
   FilePenLine,
   Menu,
@@ -158,7 +157,15 @@ function HistoryDrawer({
       <div className="px-8 pt-20">
         <div className="mb-10 flex items-center justify-between">
           <h2 className="text-3xl font-bold text-slate-950">历史对话</h2>
-          <Search size={46} strokeWidth={1.7} className="text-slate-950" />
+        </div>
+
+        <div className="mb-8 flex h-12 items-center gap-3 rounded-xl bg-slate-50 px-4">
+          <Search size={18} strokeWidth={1.7} className="shrink-0 text-slate-400" />
+          <input
+            type="text"
+            placeholder="搜索对话"
+            className="flex-1 bg-transparent text-sm text-slate-800 placeholder-slate-400 outline-none"
+          />
         </div>
 
         <div className="space-y-5">
@@ -182,10 +189,6 @@ function HistoryDrawer({
       <div className="absolute bottom-0 left-0 right-0">
         <HomeIndicator />
       </div>
-      <BotMessageSquare
-        size={26}
-        className="absolute right-8 top-36 text-slate-950"
-      />
     </aside>
   );
 }
