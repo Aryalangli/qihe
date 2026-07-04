@@ -13,7 +13,7 @@ import {
 import { useState } from "react";
 import { QiheLogo } from "@/components/brand";
 import { PromptBox } from "@/components/chat";
-import { HomeIndicator, PhoneFrame, StatusBar } from "@/components/mobile-shell";
+import { HomeIndicator, PhoneFrame } from "@/components/mobile-shell";
 import { historyItems } from "@/data/mock";
 import { cn } from "@/lib/utils";
 
@@ -23,7 +23,6 @@ export default function Home() {
 
   return (
     <PhoneFrame>
-      <StatusBar />
       <div className="relative flex min-h-0 flex-1 flex-col">
         <header className="flex h-16 items-center justify-between px-8">
           <button
@@ -133,7 +132,6 @@ function HistoryDrawer({
       )}
       aria-hidden={!open}
     >
-      <StatusBar />
       <div className="flex items-start justify-between px-8 pt-6">
         <div className="flex items-center gap-4">
           <div className="grid h-14 w-14 place-items-center rounded-full bg-blue-50 text-2xl font-semibold text-[#2563EB] ring-1 ring-blue-200">

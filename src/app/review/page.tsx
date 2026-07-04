@@ -13,7 +13,6 @@ import { useState } from "react";
 import {
   HomeIndicator,
   PhoneFrame,
-  StatusBar,
   TopNav,
 } from "@/components/mobile-shell";
 import { RiskResult } from "@/components/risk-result";
@@ -104,7 +103,6 @@ function ReviewEntry({
 }) {
   return (
     <>
-      <StatusBar />
       <TopNav />
       <section className="flex flex-1 flex-col px-7 pt-14">
         <h1 className="text-center text-2xl font-bold text-slate-950">
@@ -253,7 +251,6 @@ function FilePicker({
 }) {
   return (
     <>
-      <StatusBar />
       <header className="flex h-12 items-center px-4">
         <button type="button" onClick={onBack} className="grid h-9 w-9 place-items-center">
           ‹
@@ -321,7 +318,6 @@ function UploadPreview({
 }) {
   return (
     <>
-      <StatusBar />
       <TopNav centeredTitle title="上传图片" />
       <section className="flex flex-1 flex-col px-7 pt-8">
         <div className="grid grid-cols-2 gap-4">
@@ -369,7 +365,6 @@ function UploadPreview({
 function RiskPage() {
   return (
     <>
-      <StatusBar />
       <TopNav centeredTitle title="风险" />
       <section className="no-scrollbar flex-1 overflow-y-auto px-5 pb-8 pt-4">
         <RiskResult items={riskItems} />
