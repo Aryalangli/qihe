@@ -11,6 +11,7 @@ import {
   FileText,
   FolderOpen,
   Image as ImageIcon,
+  Scale,
   ScanSearch,
   Upload,
   X,
@@ -475,18 +476,65 @@ function ReviewingStage({ phase, stage }: { phase: number; stage: string }) {
     },
   ];
 
+  // 法律名言轮播（每 5 秒切换）
+  const quotes = [
+    "法律是一切人类智慧聪明的结晶 —— 柏拉图",
+    "法律的真谛，就是没有绝对的自由，更没有绝对的平等 —— 郭道晖",
+    "法令者，民之命也，为治之本也 —— 《商君书》",
+    "法律是显露的道德，道德是隐藏的法律 —— 林肯",
+    "在民主的国家里，法律就是国王 —— 潘恩",
+    "正义从来不会缺席，只会迟到 —— 休尼特",
+    "法立于上则俗成于下 —— 苏辙",
+    "法律不能使人人平等，但是在法律面前人人是平等的 —— 波洛克",
+    "程序是法治和恣意而治的分水岭 —— 道格拉斯",
+    "有法不行，与无法同 —— 苏轼",
+    "法律是秩序，但秩序不是正义 —— 勒尼德·汉德",
+    "治国无法则乱，守法而弗变则悖 —— 《吕氏春秋》",
+  ];
+
+  const [quoteIdx, setQuoteIdx] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setQuoteIdx((i) => (i + 1) % quotes.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <>
       <StatusBar />
-      <TopNav centeredTitle title="AI 审查中" />
-      <section className="flex flex-1 flex-col items-center px-7 pt-10">
-        {/* 标题：偏中间 */}
-        <h2 className="text-center text-lg font-semibold text-slate-800">
-          AI 合同审查中
+      <TopNav centeredTitle title="" />
+      <section className="flex flex-1 flex-col items-center justify-center px-7 pb-6">
+        {/* 标题 */}
+        <h2 className="mb-6 text-lg font-semibold text-slate-800">
+          AI 审查中
         </h2>
+        {/* 中心装饰：旋转光环 + 天平 */}
+        <div className="relative mb-6 flex items-center justify-center" style={{ width: 104, height: 104 }}>
+          {/* 外圈旋转光环 */}
+          <div
+            className="absolute inset-0 animate-spin rounded-full border-[3px] border-transparent border-t-[#2563EB] border-r-[#2563EB]/30"
+          />
+          {/* 内圈呼吸圆 */}
+          <div className="relative z-10 grid h-[72px] w-[72px] place-items-center rounded-full bg-blue-50 shadow-sm">
+            <Scale size={30} strokeWidth={1.5} className="animate-pulse text-[#2563EB]" />
+          </div>
+        </div>
 
-        {/* 四阶段进度条 — 缩小版，往下放 */}
-        <div className="mt-10 w-full max-w-xs space-y-0">
+        {/* 三个跳动点 */}
+        <div className="mb-8 flex justify-center gap-1.5">
+          {[0, 1, 2].map((i) => (
+            <span
+              key={i}
+              className="h-2 w-2 animate-bounce rounded-full bg-[#2563EB]"
+              style={{ animationDelay: `${i * 150}ms` }}
+            />
+          ))}
+        </div>
+
+        {/* 四阶段进度条 */}
+        <div className="w-full max-w-xs space-y-0">
           {phases.map((p, i) => {
             const isDone = phase > p.key;
             const isActive = phase === p.key;
@@ -496,7 +544,6 @@ function ReviewingStage({ phase, stage }: { phase: number; stage: string }) {
               <div key={p.key} className="flex gap-3">
                 {/* 左侧：图标 + 连接线 */}
                 <div className="flex flex-col items-center">
-                  {/* 圆 */}
                   <div
                     className={cn(
                       "relative z-10 grid h-7 w-7 shrink-0 place-items-center rounded-full border-2 transition-colors duration-500",
@@ -512,14 +559,12 @@ function ReviewingStage({ phase, stage }: { phase: number; stage: string }) {
                     ) : isActive ? (
                       <>
                         <p.icon size={13} strokeWidth={2} />
-                        {/* 脉冲波纹 */}
                         <span className="absolute inset-0 animate-ping rounded-full border-2 border-[#2563EB] opacity-20" />
                       </>
                     ) : (
                       <p.icon size={13} strokeWidth={1.5} />
                     )}
                   </div>
-                  {/* 连接线（最后一项不画） */}
                   {i < phases.length - 1 && (
                     <div
                       className={cn(
@@ -556,15 +601,14 @@ function ReviewingStage({ phase, stage }: { phase: number; stage: string }) {
           })}
         </div>
 
-        {/* 底部三个跳动的点 */}
-        <div className="mt-auto mb-8 flex justify-center gap-1.5">
-          {[0, 1, 2].map((i) => (
-            <span
-              key={i}
-              className="h-2 w-2 animate-bounce rounded-full bg-[#2563EB]"
-              style={{ animationDelay: `${i * 150}ms` }}
-            />
-          ))}
+        {/* 底部法律名言滚动 */}
+        <div className="mt-12 text-center">
+          <p
+            key={quoteIdx}
+            className="animate-[fadeIn_0.6s_ease-out] text-sm leading-relaxed text-slate-400"
+          >
+            {quotes[quoteIdx]}
+          </p>
         </div>
       </section>
     </>
