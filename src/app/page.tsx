@@ -66,9 +66,7 @@ export default function Home() {
             />
           </div>
 
-          <p className="mt-12 text-center text-sm text-slate-300">
-            底部导航已删除，保持空白
-          </p>
+
         </section>
 
         <HomeIndicator />

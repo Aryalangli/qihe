@@ -1,5 +1,4 @@
 import { cn } from "@/lib/utils";
-import Image from "next/image";
 
 type LogoProps = {
   compact?: boolean;
@@ -7,16 +6,12 @@ type LogoProps = {
 };
 
 export function QiheLogo({ compact = false, className }: LogoProps) {
-  const logoSize = compact ? 32 : 64;
-
   return (
     <div className={cn("flex items-center gap-3", className)}>
-      <Image
-        src="/logo.svg"
+      <img
+        src="/契合logo.png"
         alt="契合"
-        width={logoSize}
-        height={logoSize}
-        className={cn("shrink-0", compact ? "rounded-xl" : "rounded-2xl")}
+        className={cn(compact ? "h-6 w-auto" : "h-12 w-auto")}
       />
       <div>
         <div

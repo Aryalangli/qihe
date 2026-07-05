@@ -1,5 +1,6 @@
 import { FileText } from "lucide-react";
 import { FeedbackActions } from "@/components/chat";
+import { Markdown } from "@/lib/markdown";
 import type { ContractDraft } from "@/lib/types";
 import { draftToPlainText } from "@/lib/utils";
 
@@ -33,9 +34,7 @@ export function ContractCard({ draft, compact = false }: ContractCardProps) {
                     {section.title}
                   </h3>
                 ) : null}
-                {section.body.map((line) => (
-                  <p key={line}>{line}</p>
-                ))}
+                <Markdown content={section.body.join("\n")} />
               </section>
             ))}
           </div>
