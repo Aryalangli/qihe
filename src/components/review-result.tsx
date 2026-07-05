@@ -1,23 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ArrowLeft,
   ChevronDown,
   ChevronUp,
   Download,
+  FileCheck,
   Share2,
 } from "lucide-react";
-import type { ReviewResult, ReviewRisk, DiffSegment } from "@/lib/types";
+import type { ReviewResult, ReviewRisk, DiffSegment, WorkflowRiskColor } from "@/lib/types";
 import { StatusBar } from "@/components/mobile-shell";
+import { downloadContractAsPdf } from "@/lib/download-contract";
 import { cn } from "@/lib/utils";
 
 /* ========== 主组件 ========== */
 
-type Tab = "risk" | "original" | "parties";
+type Tab = "risk" | "parties" | "original";
 
 export function ReviewResultPage({ data, onBack }: { data: ReviewResult; onBack: () => void }) {
   const [tab, setTab] = useState<Tab>("risk");
+
+  /** 一键导出：原文 + 修改建议 → 合规合同 */
+  const compliantContract = useMemo(() => buildCompliantContract(data), [data]);
+
+  function handleExportCompliant() {
+    downloadContractAsPdf(
+      compliantContract,
+      data.contract_meta.title || "房屋租赁合同（合规修订版）",
+    );
+  }
 
   return (
     <>
@@ -34,7 +46,9 @@ export function ReviewResultPage({ data, onBack }: { data: ReviewResult; onBack:
           </button>
         </div>
         <div className="absolute left-16 right-16 text-center">
-          <h1 className="text-lg font-semibold text-slate-950">风险</h1>
+          <h1 className="text-lg font-semibold text-slate-950">
+            {tab === "risk" ? "风险" : tab === "parties" ? "基本信息" : "原文"}
+          </h1>
         </div>
         <div className="ml-auto flex w-10 justify-end">
           <button
@@ -47,13 +61,21 @@ export function ReviewResultPage({ data, onBack }: { data: ReviewResult; onBack:
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col">
-        <div className="flex shrink-0 border-b border-slate-200 px-5">
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {/* 顶部结论横幅（§5.3） */}
+        {data.risk_level && (
+          <ConclusionBanner
+            riskLevel={data.risk_level}
+            conclusion={data.overall_conclusion}
+          />
+        )}
+
+        <div className="flex shrink-0 items-center border-b border-slate-200 px-5">
           {(
             [
-              { key: "risk", label: "风险", icon: null },
-              { key: "original", label: "原文", icon: null },
-              { key: "parties", label: "主体", icon: null },
+              { key: "risk", label: "风险" },
+              { key: "parties", label: "基本信息" },
+              { key: "original", label: "原文" },
             ] as const
           ).map((t) => (
             <button
@@ -61,7 +83,7 @@ export function ReviewResultPage({ data, onBack }: { data: ReviewResult; onBack:
               type="button"
               onClick={() => setTab(t.key)}
               className={cn(
-                "relative px-4 py-3 text-sm font-medium transition-colors",
+                "relative px-3 py-3 text-sm font-medium transition-colors",
                 tab === t.key ? "text-[#2563EB]" : "text-slate-400",
               )}
             >
@@ -71,6 +93,17 @@ export function ReviewResultPage({ data, onBack }: { data: ReviewResult; onBack:
               )}
             </button>
           ))}
+
+          {/* 一键导出合规合同 */}
+          <button
+            type="button"
+            onClick={handleExportCompliant}
+            className="ml-2 flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-100"
+          >
+            <FileCheck size={14} />
+            <span className="hidden sm:inline">一键导出合规合同</span>
+            <span className="sm:hidden">导出合规</span>
+          </button>
 
           <div className="ml-auto flex items-center">
             <button
@@ -84,73 +117,98 @@ export function ReviewResultPage({ data, onBack }: { data: ReviewResult; onBack:
         </div>
 
         <div className="no-scrollbar flex-1 overflow-y-auto">
-          {tab === "risk" && <RiskTab risks={data.risks} />}
-          {tab === "original" && <OriginalTab data={data} />}
+          {tab === "risk" && <RiskTab risks={data.risks} greenSummary={data.green_summary} />}
           {tab === "parties" && <PartiesTab data={data} />}
+          {tab === "original" && <OriginalTab data={data} />}
         </div>
       </div>
     </>
   );
 }
 
-/* ========== Tab 1：风险 ========== */
+/* ========== 结论横幅（§5.3 新增） ========== */
 
-type RiskSubTab = "clause" | "grammar";
+const riskLevelMeta: Record<WorkflowRiskColor, { bg: string; text: string; dot: string; label: string }> = {
+  "红": { bg: "bg-red-50 border-red-200", text: "text-red-700", dot: "bg-[#EF4444]", label: "高风险" },
+  "黄": { bg: "bg-amber-50 border-amber-200", text: "text-amber-700", dot: "bg-[#F59E0B]", label: "中风险" },
+  "绿": { bg: "bg-emerald-50 border-emerald-200", text: "text-emerald-700", dot: "bg-[#22C55E]", label: "低风险" },
+};
 
-function RiskTab({ risks }: { risks: ReviewRisk[] }) {
-  const [subTab, setSubTab] = useState<RiskSubTab>("clause");
-  const [viewMode, setViewMode] = useState<"lessee" | "lessor">("lessee");
-
-  const filtered =
-    subTab === "clause"
-      ? risks.filter((r) => r.category === "clause")
-      : risks.filter((r) => r.category === "grammar");
-
-  const highCount = risks.filter((r) => r.severity === "high").length;
+function ConclusionBanner({
+  riskLevel,
+  conclusion,
+}: {
+  riskLevel: WorkflowRiskColor;
+  conclusion?: string;
+}) {
+  const meta = riskLevelMeta[riskLevel] ?? riskLevelMeta["绿"];
 
   return (
-    <div className="px-5 pb-8 pt-4">
-      {/* 子 Tag 切换 */}
-      <div className="flex items-center justify-between">
+    <div className={cn("mx-5 mt-3 rounded-xl border px-4 py-3", meta.bg)}>
+      <div className="flex items-center gap-2">
+        <span className={cn("h-3 w-3 rounded-full", meta.dot)} />
+        <span className={cn("text-sm font-semibold", meta.text)}>
+          整体风险：{meta.label}
+        </span>
+      </div>
+      {conclusion && (
+        <p className={cn("mt-1.5 text-sm leading-6", meta.text)}>
+          {conclusion}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ========== Tab 1：风险 ========== */
+
+function RiskTab({ risks, greenSummary }: { risks: ReviewRisk[]; greenSummary?: string }) {
+  const [subTab, setSubTab] = useState<"red" | "yellow">("red");
+
+  const highRisks = risks.filter((r) => r.severity === "high");
+  const mediumRisks = risks.filter((r) => r.severity === "medium");
+  const filtered = subTab === "red" ? highRisks : mediumRisks;
+
+  return (
+    <div className="px-5 pb-8">
+      {/* 子标签：红色风险 / 黄色风险 — 粘性定位 */}
+      <div className="sticky top-0 z-10 -mx-5 flex items-center justify-between bg-white px-5 pb-3 pt-4">
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => setSubTab("clause")}
+            onClick={() => setSubTab("red")}
             className={cn(
               "rounded-full px-4 py-1.5 text-xs font-medium transition-colors",
-              subTab === "clause"
-                ? "bg-[#2563EB] text-white"
+              subTab === "red"
+                ? "bg-[#EF4444] text-white"
                 : "bg-slate-100 text-slate-500",
             )}
           >
-            条款风险{" "}
-            {highCount > 0 && (
-              <span className="ml-1">{risks.filter((r) => r.severity === "high" && r.category === "clause").length}</span>
+            红色风险
+            {highRisks.length > 0 ? (
+              <span className="ml-1">{highRisks.length}</span>
+            ) : (
+              <span className="ml-1 opacity-70">（无）</span>
             )}
           </button>
           <button
             type="button"
-            onClick={() => setSubTab("grammar")}
+            onClick={() => setSubTab("yellow")}
             className={cn(
               "rounded-full px-4 py-1.5 text-xs font-medium transition-colors",
-              subTab === "grammar"
-                ? "bg-[#2563EB] text-white"
+              subTab === "yellow"
+                ? "bg-[#F59E0B] text-white"
                 : "bg-slate-100 text-slate-500",
             )}
           >
-            文法逻辑
+            黄色风险
+            {mediumRisks.length > 0 ? (
+              <span className="ml-1">{mediumRisks.length}</span>
+            ) : (
+              <span className="ml-1 opacity-70">（无）</span>
+            )}
           </button>
         </div>
-
-        <button
-          type="button"
-          onClick={() =>
-            setViewMode(viewMode === "lessee" ? "lessor" : "lessee")
-          }
-          className="rounded-full bg-slate-100 px-3 py-1.5 text-xs text-slate-500"
-        >
-          {viewMode === "lessee" ? "承租人视角" : "出租人视角"}
-        </button>
       </div>
 
       {/* 风险卡片列表 */}
@@ -159,6 +217,16 @@ function RiskTab({ risks }: { risks: ReviewRisk[] }) {
           <RiskCard key={risk.id} risk={risk} />
         ))}
       </div>
+
+      {/* 绿色摘要（§5.3） */}
+      {greenSummary && (
+        <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
+          <h3 className="text-xs font-semibold text-emerald-700">合规要点</h3>
+          <p className="mt-1 text-sm leading-6 text-emerald-700">
+            {greenSummary}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -181,8 +249,16 @@ function RiskCard({ risk }: { risk: ReviewRisk }) {
     low: "text-slate-500",
   }[risk.severity];
 
+  const hasStructuredDiff = risk.diff && risk.diff.length > 0;
+  const hasOriginalText =
+    risk.original_text && risk.original_text !== "未约定";
+
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div
+      className={cn(
+        "overflow-hidden rounded-xl border bg-white shadow-sm",
+        risk.severity === "high" ? "border-red-200" : "border-amber-200",
+      )}>
       {/* 标题行 */}
       <button
         type="button"
@@ -232,7 +308,7 @@ function RiskCard({ risk }: { risk: ReviewRisk }) {
             </p>
           </div>
 
-          {/* 修改对比卡片 */}
+          {/* 一键修改对比卡片 */}
           <div className="mt-4 rounded-xl bg-slate-50 p-4">
             <div className="mb-2 flex items-center gap-2">
               <span className="rounded bg-[#2563EB] px-1.5 py-0.5 text-[10px] font-medium text-white">
@@ -240,35 +316,63 @@ function RiskCard({ risk }: { risk: ReviewRisk }) {
               </span>
             </div>
 
-            <div className="text-sm leading-6 text-slate-700">
-              {showDiff
-                ? risk.diff.map((seg, i) => (
+            {showDiff ? (
+              hasStructuredDiff ? (
+                /* 有结构化 diff → 逐段渲染 */
+                <div className="text-sm leading-6 text-slate-700">
+                  {risk.diff.map((seg, i) => (
                     <DiffSegment key={i} segment={seg} />
-                  ))
-                : risk.revised_text}
-            </div>
+                  ))}
+                </div>
+              ) : (
+                /* 无结构化 diff → 原文 vs 改后对照 */
+                <div className="space-y-3 text-sm leading-6">
+                  {hasOriginalText && (
+                    <div>
+                      <span className="mb-1 inline-block rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-600">
+                        原文
+                      </span>
+                      <p className="mt-1 text-slate-400 line-through">
+                        {risk.original_text}
+                      </p>
+                    </div>
+                  )}
+                  <div>
+                    <span className="mb-1 inline-block rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600">
+                      改后
+                    </span>
+                    <p className="mt-1 text-slate-700">{risk.revised_text}</p>
+                  </div>
+                </div>
+              )
+            ) : (
+              /* 默认显示改后建议 */
+              <div className="text-sm leading-6 text-slate-700">
+                {risk.revised_text}
+              </div>
+            )}
 
-            {/* 底部控制 */}
+            {/* 底部控制：始终显示对比开关 */}
             <div className="mt-3 flex items-center justify-between border-t border-slate-200 pt-3">
               <span className="rounded-md bg-slate-200/60 px-2 py-0.5 text-xs text-slate-500">
                 {risk.clause_tag}
               </span>
-              <label className="flex cursor-pointer items-center gap-1.5 text-xs text-slate-400">
-                <span>比对</span>
+              <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-600">
+                <span>与原文对比</span>
                 <button
                   type="button"
                   role="switch"
                   aria-checked={showDiff}
                   onClick={() => setShowDiff(!showDiff)}
                   className={cn(
-                    "relative h-5 w-9 rounded-full transition-colors",
+                    "relative h-[30px] w-[54px] rounded-full transition-colors",
                     showDiff ? "bg-[#2563EB]" : "bg-slate-300",
                   )}
                 >
                   <span
                     className={cn(
-                      "absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform",
-                      showDiff ? "left-[18px]" : "left-0.5",
+                      "absolute top-[3px] h-6 w-6 rounded-full bg-white shadow transition-transform",
+                      showDiff ? "left-[27px]" : "left-[3px]",
                     )}
                   />
                 </button>
@@ -299,88 +403,91 @@ function DiffSegment({ segment }: { segment: DiffSegment }) {
   return <>{segment.text}</>;
 }
 
-/* ========== Tab 2：原文 ========== */
+/* ========== 一键导出：原文 + 修改建议 → 合规合同 ========== */
+
+function buildCompliantContract(data: ReviewResult): string {
+  let text = data.full_text;
+
+  if (text) {
+    // 逐条替换：原文条款 → 修订后条文
+    for (const risk of data.risks) {
+      if (
+        risk.original_text &&
+        risk.original_text !== "未约定" &&
+        risk.revised_text
+      ) {
+        text = text.replace(risk.original_text, risk.revised_text);
+      }
+    }
+    return text;
+  }
+
+  // 无原文时（文件上传模式），用 metadata + 建议构造合规合同
+  const meta = data.contract_meta;
+  const parts: string[] = [
+    `# ${meta.title || "房屋租赁合同"}（合规修订版）`,
+    "",
+    "## 一、合同主体",
+    `出租方（甲方）：${data.parties.甲方.name}`,
+    `承租方（乙方）：${data.parties.乙方.name}`,
+    "",
+    "## 二、房屋信息与租赁条款",
+    `房屋地址：${meta.property_address}`,
+    `租赁期限：${meta.lease_start}${meta.lease_end ? ` 至 ${meta.lease_end}` : ""}`,
+    `月租金：${meta.rent_per_month}`,
+  ];
+
+  if (meta.deposit_amount) parts.push(`押金金额：${meta.deposit_amount}`);
+  if (meta.deposit_return)
+    parts.push(`押金退还条件：${meta.deposit_return}`);
+  if (meta.payment_method) parts.push(`支付方式：${meta.payment_method}`);
+
+  if (data.risks.length > 0) {
+    parts.push("", "## 三、修订条款（基于 AI 审查建议）");
+    data.risks.forEach((r, i) => {
+      parts.push(
+        `### ${i + 1}. ${r.title}`,
+        `**修订后条文**：${r.revised_text}`,
+        "",
+      );
+    });
+  }
+
+  if (data.green_summary) {
+    parts.push("## 四、合规说明", data.green_summary);
+  }
+
+  return parts.join("\n");
+}
+
+/* ========== Tab 3：原文 ========== */
 
 function OriginalTab({ data }: { data: ReviewResult }) {
-  const riskSpans = data.risks.map((r) => r.original_text);
-  const highlights = ["租金", "押金", "违约金", "租赁期限", "建筑面积"].flatMap(
-    (kw) => {
-      const matches: { start: number; end: number }[] = [];
-      let idx = data.full_text.indexOf(kw);
-      while (idx !== -1) {
-        matches.push({ start: idx, end: idx + kw.length });
-        idx = data.full_text.indexOf(kw, idx + 1);
-      }
-      return matches;
-    },
-  );
-
-  let lastIdx = 0;
-  const segments: { text: string; type: "normal" | "risk" | "highlight" }[] =
-    [];
-
-  const allHighlights = [
-    ...highlights.map((h) => ({ ...h, type: "highlight" as const })),
-    ...riskSpans.flatMap((span) => {
-      const s = data.full_text.indexOf(span);
-      if (s === -1) return [];
-      return [{ start: s, end: s + span.length, type: "risk" as const }];
-    }),
-  ].sort((a, b) => a.start - b.start);
-
-  allHighlights.forEach((h) => {
-    if (h.start > lastIdx) {
-      segments.push({
-        text: data.full_text.slice(lastIdx, h.start),
-        type: "normal",
-      });
-    }
-    segments.push({
-      text: data.full_text.slice(h.start, h.end),
-      type: h.type,
-    });
-    lastIdx = h.end;
-  });
-
-  if (lastIdx < data.full_text.length) {
-    segments.push({ text: data.full_text.slice(lastIdx), type: "normal" });
+  if (!data.full_text) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center px-5 py-16 text-center">
+        <p className="text-sm text-slate-400">
+          上传文件模式下原文不保留
+        </p>
+        <p className="mt-1 text-xs text-slate-300">
+          可查看"基本信息"和"风险"了解合同详情
+        </p>
+      </div>
+    );
   }
 
   return (
     <div className="px-5 py-4">
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="mb-3 flex items-center gap-2 text-xs text-slate-400">
-          <span className="flex items-center gap-1">
-            <span className="inline-block h-2.5 w-2.5 rounded-sm bg-amber-100" />{" "}
-            风险条款
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="inline-block h-2.5 w-2.5 rounded-sm bg-blue-100" />{" "}
-            关键信息
-          </span>
-        </div>
         <pre className="whitespace-pre-wrap text-sm leading-7 text-slate-700">
-          {segments.map((seg, i) => (
-            <span
-              key={i}
-              className={
-                seg.type === "risk"
-                  ? "rounded bg-amber-100 px-0.5 text-amber-900"
-                  : seg.type === "highlight"
-                    ? "rounded bg-blue-100 px-0.5 text-blue-800"
-                    : ""
-              }
-            >
-              {seg.text}
-            </span>
-          ))}
+          {data.full_text}
         </pre>
       </div>
     </div>
   );
 }
 
-/* ========== Tab 3：主体信息 ========== */
+/* ========== Tab 2：基本信息 ========== */
 
 function PartiesTab({ data }: { data: ReviewResult }) {
   const { 甲方, 乙方 } = data.parties;
@@ -389,12 +496,26 @@ function PartiesTab({ data }: { data: ReviewResult }) {
   const infoFields: { label: string; value: string }[] = [
     { label: "合同名称", value: meta.title },
     { label: "房屋地址", value: meta.property_address },
-    { label: "建筑面积", value: `${meta.area}㎡` },
-    { label: "月租金", value: `¥${meta.rent_per_month}` },
+    ...(meta.area && meta.area !== "未约定"
+      ? [{ label: "建筑面积", value: `${meta.area}㎡` }]
+      : []),
+    { label: "月租金", value: meta.rent_per_month ? `¥${meta.rent_per_month}` : "未约定" },
     {
       label: "租赁期限",
-      value: `${meta.lease_start} 至 ${meta.lease_end}`,
+      value: meta.lease_end
+        ? `${meta.lease_start} 至 ${meta.lease_end}`
+        : meta.lease_start || "未约定",
     },
+    // 工作流新增：押金 + 支付方式（§5.3）
+    ...(meta.deposit_amount
+      ? [{ label: "押金金额", value: `¥${meta.deposit_amount}` }]
+      : []),
+    ...(meta.deposit_return
+      ? [{ label: "押金退还", value: meta.deposit_return }]
+      : []),
+    ...(meta.payment_method
+      ? [{ label: "支付方式", value: meta.payment_method }]
+      : []),
   ];
 
   return (
@@ -429,6 +550,9 @@ function PartyCard({
   info: { name: string; id_card: string; phone: string };
 }) {
   const isPartyA = title.includes("甲方");
+  const showIdCard = info.id_card && info.id_card !== "—";
+  const showPhone = info.phone && info.phone !== "—";
+
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="mb-3 flex items-center gap-2">
@@ -444,8 +568,8 @@ function PartyCard({
       </div>
       <div className="space-y-2 pl-9 text-sm">
         <InfoRow label="姓名" value={info.name} />
-        <InfoRow label="身份证号" value={info.id_card} />
-        <InfoRow label="联系电话" value={info.phone} />
+        {showIdCard && <InfoRow label="身份证号" value={info.id_card} />}
+        {showPhone && <InfoRow label="联系电话" value={info.phone} />}
       </div>
     </div>
   );

@@ -1,11 +1,21 @@
 /**
- * 检测 Markdown 文本中是否包含合同内容
- * 判断依据：包含 # 一级标题 + "第X条" 的章节标题
+ * 检测文本中是否包含合同内容（同时支持 Markdown 和纯文本）
+ *
+ * Markdown 模式：包含 # 标题 + "第X条" 章节标题
+ * 纯文本模式：包含合同关键词 + 条款结构
  */
 export function hasContractContent(text: string): boolean {
+  // Markdown 模式
   const hasMainTitle = /^#\s+.+合同/m.test(text);
   const hasClauses = /^#{1,3}\s+第[一二三四五六七八九十百\d]+条/m.test(text);
-  return hasMainTitle || (hasClauses && text.includes("#"));
+  if (hasMainTitle || (hasClauses && text.includes("#"))) return true;
+
+  // 纯文本模式：包含合同核心关键词即可
+  const hasPartyKeyword =
+    /甲方|乙方|出租方|承租方|出租人|承租人|房东|租客/.test(text);
+  const hasContractKeyword = /合同|协议|租赁|租金|押金|租期|违约责任/.test(text);
+
+  return hasPartyKeyword || hasContractKeyword;
 }
 
 /**

@@ -4,6 +4,7 @@ import type {
   RecentRecord,
   ReviewResult,
   RiskItem,
+  WorkflowReviewResult,
 } from "@/lib/types";
 
 export const historyItems = [
@@ -226,4 +227,55 @@ export const mockReviewResult: ReviewResult = {
 
 第七条 其他约定
 双方应遵守法律法规，友好协商解决争议。`,
+};
+
+/** 符合 WorkflowReviewResult 结构的 mock（本地无 Dify 时开发用） */
+export const mockWorkflowResult: WorkflowReviewResult = {
+  key_info: {
+    出租方: "张建国",
+    承租方: "李明",
+    房屋地址: "上海市浦东新区张江路100号2栋301室",
+    租赁期限: "2026-07-15至2027-07-14",
+    月租金: "8500元",
+    押金金额: "17000元",
+    押金退还条件: "租赁期满后7日内退还，扣除乙方过错造成的实际损失",
+    支付方式: "月付",
+  },
+  risk_level: "红",
+  overall_conclusion:
+    "合同存在押金扣除范围过宽、提前解约违约金过高等红色风险，建议修改后再签署。",
+  issues: [
+    {
+      color: "红",
+      category: "R3 押金费用",
+      clause:
+        "租赁期满后，甲方有权从押金中扣除房屋维修费、清洁费及其他相关费用。",
+      problem: "押金扣除范围过宽，'其他相关费用'表述模糊，缺少退还期限和凭证要求",
+      legal_basis:
+        "《民法典》第713条：出租人应当履行租赁物的维修义务，正常使用磨损不应由承租人承担。",
+      suggestion:
+        "明确押金退还期限为合同终止后7日内，限定扣除范围仅为乙方过错造成的实际损失，要求甲方提供费用凭证，排除正常磨损的扣款。",
+    },
+    {
+      color: "红",
+      category: "R2 租赁期限",
+      clause: "乙方提前解除合同的，应支付相当于三个月租金的违约金。",
+      problem: "提前解约违约金高达三个月租金，可能被法院认定为过高而调整",
+      legal_basis:
+        "《民法典》第585条：违约金过分高于造成的损失的，当事人可以请求适当减少。",
+      suggestion:
+        "将违约金从三个月降至一个月，增加提前30日通知期的缓冲机制，明确押金退还流程。",
+    },
+    {
+      color: "黄",
+      category: "Y3 维修责任",
+      clause: "租赁期间，房屋及设施设备的维修由乙方负责。",
+      problem: "维修责任全部推给承租方，未区分自然损耗与人为损坏，对承租方不利",
+      legal_basis: "",
+      suggestion:
+        "区分责任：房屋主体及大件家电由出租方维修，日常小修由承租方自行处理。",
+    },
+  ],
+  green_summary:
+    "合同明确了租赁期限、租金金额和支付方式，房屋地址和双方主体信息完整。",
 };
