@@ -1,10 +1,11 @@
 import {
   fullContractDraft,
+  mockReviewResult,
   riskItems,
   stoppedContractDraft,
 } from "@/data/mock";
 import { callDifyChatflow } from "@/lib/dify";
-import type { ContractDraft, RiskItem } from "@/lib/types";
+import type { ContractDraft, ReviewResult, RiskItem } from "@/lib/types";
 
 /**
  * 通过 Dify Chatflow 生成合同（多轮对话）
@@ -29,7 +30,7 @@ export async function mockGenerateContractDraft(
 }
 
 /** @deprecated 已接入真实 Dify，保留用于参考 */
-export async function mockReviewContract(): Promise<RiskItem[]> {
+export async function mockReviewContract(): Promise<ReviewResult> {
   await new Promise((resolve) => setTimeout(resolve, 400));
-  return riskItems;
+  return mockReviewResult;
 }

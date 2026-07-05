@@ -5,6 +5,7 @@ import {
   Check,
   Clock,
   File,
+  FileText,
   FolderOpen,
   Image as ImageIcon,
   Loader2,
@@ -19,13 +20,14 @@ import {
   StatusBar,
   TopNav,
 } from "@/components/mobile-shell";
-import { RiskResult } from "@/components/risk-result";
+import { ReviewResultPage } from "@/components/review-result";
 import { RecentRecordList, UploadCard } from "@/components/upload-card";
-import { fileOptions, historyFiles, recentRecords, riskItems } from "@/data/mock";
+import { fileOptions, historyFiles, recentRecords } from "@/data/mock";
 import { mockReviewContract } from "@/lib/ai-placeholders";
+import type { ReviewResult } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-type ReviewStep = "entry" | "sheet" | "album" | "files" | "uploading" | "identity" | "preview" | "result";
+type ReviewStep = "entry" | "sheet" | "album" | "files" | "uploading" | "preview" | "result";
 
 const albumTiles = [
   "bg-[#D9D367]",
@@ -50,12 +52,12 @@ export default function ReviewPage() {
   const [step, setStep] = useState<ReviewStep>("entry");
   const [selectedFile, setSelectedFile] = useState(fileOptions[0].id);
   const [selectedPhoto, setSelectedPhoto] = useState(2);
-  const [identity, setIdentity] = useState<"lessor" | "lessee" | null>(null);
-  const [note, setNote] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [reviewResult, setReviewResult] = useState<ReviewResult | null>(null);
 
   async function showResult() {
-    await mockReviewContract();
+    const result = await mockReviewContract();
+    setReviewResult(result);
     setStep("result");
   }
 
@@ -84,21 +86,12 @@ export default function ReviewPage() {
         <UploadLoading
           progress={uploadProgress}
           onProgress={setUploadProgress}
-          onComplete={() => setStep("identity")}
-        />
-      ) : step === "identity" ? (
-        <IdentitySelect
-          identity={identity}
-          onIdentityChange={setIdentity}
-          note={note}
-          onNoteChange={setNote}
-          onBack={() => setStep("entry")}
-          onSubmit={() => setStep("preview")}
+          onComplete={() => setStep("preview")}
         />
       ) : step === "preview" ? (
         <UploadPreview onBack={() => setStep("entry")} onDone={showResult} />
-      ) : step === "result" ? (
-        <RiskPage />
+      ) : step === "result" && reviewResult ? (
+        <ReviewResultPage data={reviewResult} onBack={() => setStep("preview")} />
       ) : (
         <ReviewEntry
           showSheet={step === "sheet"}
@@ -272,115 +265,6 @@ function UploadLoading({
   );
 }
 
-function IdentitySelect({
-  identity,
-  onIdentityChange,
-  note,
-  onNoteChange,
-  onBack,
-  onSubmit,
-}: {
-  identity: "lessor" | "lessee" | null;
-  onIdentityChange: (value: "lessor" | "lessee") => void;
-  note: string;
-  onNoteChange: (value: string) => void;
-  onBack: () => void;
-  onSubmit: () => void;
-}) {
-  return (
-    <>
-      <StatusBar />
-      <TopNav centeredTitle title="确认信息" onBack={onBack} />
-      <section className="flex flex-1 flex-col px-7 pt-8">
-        <h2 className="text-lg font-semibold text-slate-800">选择你的身份</h2>
-        <p className="mt-1 text-sm text-slate-400">请选择你在合同中的身份</p>
-
-        <div className="mt-6 grid grid-cols-2 gap-4">
-          <button
-            type="button"
-            onClick={() => onIdentityChange("lessor")}
-            className={`flex flex-col items-center rounded-2xl border-2 px-4 py-6 transition-colors ${
-              identity === "lessor"
-                ? "border-[#2563EB] bg-blue-50"
-                : "border-slate-200 bg-white"
-            }`}
-          >
-            <span
-              className={`grid h-12 w-12 place-items-center rounded-full text-lg font-bold ${
-                identity === "lessor"
-                  ? "bg-[#2563EB] text-white"
-                  : "bg-slate-100 text-slate-400"
-              }`}
-            >
-              租
-            </span>
-            <span
-              className={`mt-3 text-sm font-semibold ${
-                identity === "lessor" ? "text-[#2563EB]" : "text-slate-600"
-              }`}
-            >
-              出租方
-            </span>
-            <span className="mt-1 text-xs text-slate-400">我是房东/出租人</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onIdentityChange("lessee")}
-            className={`flex flex-col items-center rounded-2xl border-2 px-4 py-6 transition-colors ${
-              identity === "lessee"
-                ? "border-[#2563EB] bg-blue-50"
-                : "border-slate-200 bg-white"
-            }`}
-          >
-            <span
-              className={`grid h-12 w-12 place-items-center rounded-full text-lg font-bold ${
-                identity === "lessee"
-                  ? "bg-[#2563EB] text-white"
-                  : "bg-slate-100 text-slate-400"
-              }`}
-            >
-              承
-            </span>
-            <span
-              className={`mt-3 text-sm font-semibold ${
-                identity === "lessee" ? "text-[#2563EB]" : "text-slate-600"
-              }`}
-            >
-              承租方
-            </span>
-            <span className="mt-1 text-xs text-slate-400">我是租客/承租人</span>
-          </button>
-        </div>
-
-        <div className="mt-8">
-          <h3 className="text-sm font-semibold text-slate-700">补充说明（选填）</h3>
-          <textarea
-            value={note}
-            onChange={(e) => onNoteChange(e.target.value)}
-            placeholder="如有需要补充的信息可以写在这里..."
-            className="mt-3 h-28 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 placeholder-slate-400 outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]"
-          />
-        </div>
-
-        <button
-          type="button"
-          onClick={onSubmit}
-          disabled={!identity}
-          className={`mx-auto mt-auto h-12 w-full rounded-xl font-semibold text-white shadow-sm ${
-            identity
-              ? "bg-[#2563EB]"
-              : "cursor-not-allowed bg-slate-300"
-          }`}
-        >
-          开始审查
-        </button>
-        <HomeIndicator />
-      </section>
-    </>
-  );
-}
-
 function AlbumPicker({
   selectedPhoto,
   onSelect,
@@ -511,7 +395,7 @@ function FilePicker({
         <div className="mt-4 space-y-3">
           {historyFiles.map((file) => (
             <button
-              key={file.fileName}
+              key={`${file.fileName}-${file.date}`}
               type="button"
               onClick={onConfirm}
               className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 text-left shadow-sm"
@@ -562,12 +446,23 @@ function UploadPreview({
     }
   };
 
+  const getPreviewFileIcon = (name: string) => {
+    const ext = name.split(".").pop()?.toLowerCase() ?? "";
+    if (ext === "doc" || ext === "docx") return <FileText size={16} className="inline text-[#2563EB]" />;
+    if (ext === "pdf") return <FileText size={16} className="inline text-[#DC2626]" />;
+    return <ImageIcon size={16} className="inline text-[#059669]" />;
+  };
+
   return (
     <>
       <StatusBar />
       <TopNav centeredTitle title="AI合同审查" onBack={onBack} action="none" />
       <section className="flex flex-1 flex-col px-7 pt-8">
-        <div className="relative aspect-[0.72] rounded-xl bg-[#E9C2C9] p-5">
+        <button
+          type="button"
+          onClick={onDone}
+          className="relative aspect-[0.72] w-full rounded-xl bg-[#E9C2C9] p-5 text-left"
+        >
           <div className="mt-4 space-y-3">
             {Array.from({ length: 7 }).map((_, index) => (
               <span
@@ -577,10 +472,11 @@ function UploadPreview({
             ))}
           </div>
           <span className="absolute bottom-5 left-4 text-xs text-white/70">01</span>
-        </div>
+        </button>
         {previewFiles.map((file) => (
           <div key={file.name} className="mt-3">
             <p className="truncate text-sm text-slate-400 whitespace-nowrap">
+              {getPreviewFileIcon(file.name)}{" "}
               <span className="font-semibold text-slate-700">{file.name}</span>
               &nbsp;&nbsp;·&nbsp;&nbsp;{file.date}&nbsp;&nbsp;·&nbsp;&nbsp;
               <span className={statusStyle(file.status)}>
@@ -595,23 +491,10 @@ function UploadPreview({
           onClick={onDone}
           className="mx-auto mt-auto h-12 w-48 rounded-xl bg-[#2563EB] font-semibold text-white shadow-sm"
         >
-          上传完成
+          开始审查
         </button>
         <HomeIndicator />
       </section>
-    </>
-  );
-}
-
-function RiskPage() {
-  return (
-    <>
-      <StatusBar />
-      <TopNav centeredTitle title="风险" />
-      <section className="no-scrollbar flex-1 overflow-y-auto px-5 pb-8 pt-4">
-        <RiskResult items={riskItems} />
-      </section>
-      <HomeIndicator />
     </>
   );
 }
